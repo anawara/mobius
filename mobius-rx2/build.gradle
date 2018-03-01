@@ -12,6 +12,7 @@ dependencies {
     api project(':mobius-core')
 
     implementation "com.google.code.findbugs:jsr305:${versions.jsr305}"
+    implementation "com.google.auto.value:auto-value:${versions.autoValue}"
 
     testImplementation project(':mobius-test')
     testImplementation "junit:junit:${versions.junit}"
