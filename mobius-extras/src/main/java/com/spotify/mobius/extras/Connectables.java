@@ -23,8 +23,13 @@ import com.spotify.mobius.Connectable;
 import com.spotify.mobius.Connection;
 import com.spotify.mobius.extras.connections.ContramapConnection;
 import com.spotify.mobius.extras.connections.DisconnectOnNullDimapConnection;
+import com.spotify.mobius.extras.connections.MergeConnectablesConnection;
 import com.spotify.mobius.functions.Consumer;
 import com.spotify.mobius.functions.Function;
+import com.spotify.mobius.internal_util.Preconditions;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import javax.annotation.Nonnull;
 
 /** Contains utility functions for working with {@link Connectables}. */
@@ -175,6 +180,37 @@ public final class Connectables {
           @Override
           public Connection<A> apply(Consumer<D> output) {
             return DisconnectOnNullDimapConnection.create(aToB, cToD, connectable, output);
+          }
+        });
+  }
+
+  /**
+   * Merges two connectables into one. The resulting connectable will invoke both connectables on
+   * every item received, and will forward results of both in no particular order.
+   */
+  @Nonnull
+  public static <A, B> Connectable<A, B> merge(
+      final Connectable<A, B> fst, final Connectable<A, B> snd) {
+    return mergeAll(fst, snd);
+  }
+
+  /**
+   * Merges all provided connectables into one. The resulting connectable will invoke all
+   * connectables on evvery item received, and will forward all results in no particular order.
+   */
+  @Nonnull
+  public static <A, B> Connectable<A, B> mergeAll(
+      final Connectable<A, B> fst, final Connectable<A, B> snd, final Connectable<A, B>... cs) {
+    return SimpleConnectable.withConnectionFactory(
+        new Function<Consumer<B>, Connection<A>>() {
+          @Nonnull
+          @Override
+          public Connection<A> apply(Consumer<B> output) {
+            List<Connectable<A, B>> result = new ArrayList<>(cs.length + 2);
+            result.add(fst);
+            result.add(snd);
+            Collections.addAll(result, (Connectable<A, B>[]) Preconditions.checkArrayNoNulls(cs));
+            return MergeConnectablesConnection.create(result, output);
           }
         });
   }
